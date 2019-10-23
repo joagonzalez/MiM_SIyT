@@ -1,8 +1,10 @@
 # MiM_SIyT
 
+Grupo 14 
+
 ### Docentes
 - Guido de Caso (gdecaso@gmail.com)
--  Ignacio Pérez (ignacio.perez@gmail.com)
+- Ignacio Pérez (ignacio.perez@gmail.com)
 
 ### Enlaces de interes
 
