@@ -2,23 +2,31 @@ import requests
 import json
 from time import sleep
 
-def get_status(url):
-    resp = requests.get(url)
+API_URL = 'http://localhost:8086'
+API_ENDPOINT = 'query'
+INFLUX_DB = 'telegraf_test'
+
+def _url(path):
+    return API_URL + path
+
+def get_influx_data(endpoint,db):
+
+    params = {
+        'q':'SELECT * FROM cpu',
+        }
+    resp = requests.get(_url(endpoint) + '?db=' + db,params=params)
     if resp.status_code != 200:
         # This means something went wrong.
-        raise ApiError('GET /tasks/ {}'.format(resp.status_code))
-    return resp
+        raise ValueError('GET ' + endpoint + ' error')
+        
+    return resp.json()
 
-def describe_task(task_id):
-    pass
-def add_task(summary, description=""):
-    pass
-def task_done(task_id):
-    pass
-def update_task(task_id, summary, description):
+def insert_influx_data(summary, description=""):
     pass
 
-for num in range(20):
-    data = get_status('http://0.0.0.0:8080/api/experimental/test')
-    print('El estado del api es: ' + str(data))
-    sleep(.5)
+def update_influx_data(task_id, summary, description):
+    pass
+
+while True:
+    print(get_influx_data('/query',INFLUX_DB))
+    sleep(1)
