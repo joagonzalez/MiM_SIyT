@@ -10,7 +10,6 @@ def _url(path):
     return API_URL + path
 
 def get_influx_data(endpoint,db):
-
     params = {
         'q':'SELECT * FROM cpu',
         }
@@ -21,10 +20,10 @@ def get_influx_data(endpoint,db):
         
     return resp.json()
 
-def insert_influx_data(summary, description=""):
+def insert_influx_data(endpoint, data=""):
     pass
 
-def update_influx_data(task_id, summary, description):
+def update_influx_data(endpoint, data=""):
     pass
 
 while True:
