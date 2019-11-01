@@ -6,6 +6,7 @@ API_TRANSPORTE_URL = 'https://apitransporte.buenosaires.gob.ar'
 CLIENT_ID = 'fb174c1cde604a999877a85f1e69c18c'
 CLIENT_SECRET = 'd26E1dAb300B45DC9c752514AEf7C004'
 FILENAME = 'bike_stations.json'
+COUNT = 1
 
 def _url(path):
     return API_TRANSPORTE_URL + path
@@ -40,10 +41,13 @@ def show_results(data):
 
 def save_data(data, filename):
     f= open(filename,"w+")
-    f.write(str(data))
+    f.write(str(json.dumps(data)))
     f.close()
 
-count = 1
+#### MAIN PROGRAM 
+
+threshold = input('Ingrese cantidad de iteraciones: ')
+
 while True:
     data = get_trasporte('/ecobici/gbfs/stationStatus')
     
@@ -51,7 +55,9 @@ while True:
 
     show_results(data)
     print('#############')
-    print('Query #' + str(count))
+    print('Query #' + str(COUNT))
     print('#############')
-    count += 1
+    COUNT += 1
+    if COUNT > threshold:
+        break
     sleep(2)
