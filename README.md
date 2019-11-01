@@ -19,7 +19,7 @@ pip install -r tp1/src/requirements.txt
 ```
 
 ```
-sudo apt install protobuf-compiler```
+sudo apt install protobuf-compiler
 ```
 
 #### Protobuf
@@ -34,3 +34,15 @@ Se usan los metodos `SerializeToString()` y `ParseFromString(data)`
 
 python write_message.py message.txt 
 python read_message.py message.txt 
+
+#### API Token GCBA Transporte
+Para utilizar la API deben contar con las credenciales que se detallan a continuación. Es necesario agregarlas al request como query params.
+
+```
+client_id: fb174c1cde604a999877a85f1e69c18c
+client_secret: d26E1dAb300B45DC9c752514AEf7C004
+```
+
+También puede navegar y obtener mas información sobre el uso desde la APIDoc: 
+
+https://apitransporte.buenosaires.gob.ar/console/
