@@ -1,12 +1,31 @@
+###################
+#### LIBRARIES ####
+###################
+
 import requests
 import json
+import os
 from time import sleep
+from datetime import datetime
+
+import pyarrow.parquet as pq
+import numpy as np
+import pandas as pd
+import pyarrow as pa
+
+###############
+#### CONST ####
+###############
 
 API_TRANSPORTE_URL = 'https://apitransporte.buenosaires.gob.ar'
 CLIENT_ID = 'fb174c1cde604a999877a85f1e69c18c'
 CLIENT_SECRET = 'd26E1dAb300B45DC9c752514AEf7C004'
-FILENAME = 'bike_stations.json'
+FILENAME = 'reports/bike_stations_'
 COUNT = 1
+
+###################
+#### FUNCTIONS ####
+###################
 
 def _url(path):
     return API_TRANSPORTE_URL + path
@@ -44,20 +63,45 @@ def save_data(data, filename):
     f.write(str(json.dumps(data)))
     f.close()
 
-#### MAIN PROGRAM 
+def write_parquet_message(path):
+    list = []
+    tables = []
+
+    files = os.listdir(path)
+
+    for file in files: # json file to pandas
+        list.append(pd.read_json(path + file))
+
+    for element in list: # pandas to parquet
+        print(element)
+        tables.append(pa.Table.from_pandas(element))
+    
+    for table in tables: # .parquet file 
+        now = datetime.now()
+        pq.write_table(table, 'bike_station_' + str(now) + '.parquet')
+
+def read_parquet_message(path):
+    pass
+
+######################
+#### MAIN PROGRAM ####
+######################
 
 threshold = input('Ingrese cantidad de iteraciones: ')
 
 while True:
     data = get_trasporte('/ecobici/gbfs/stationStatus')
-    
-    save_data(data,FILENAME)
+    now = datetime.now()
+    save_data(data,FILENAME + '_' + str(now) + '.json')
 
     show_results(data)
     print('#############')
     print('Query #' + str(COUNT))
     print('#############')
     COUNT += 1
-    if COUNT > threshold:
+    if COUNT > int(threshold):
         break
     sleep(2)
+
+print('Writing .parquet files....')
+write_parquet_message('reports/')
