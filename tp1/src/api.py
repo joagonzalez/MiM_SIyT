@@ -2,30 +2,56 @@ import requests
 import json
 from time import sleep
 
-API_URL = 'http://localhost:8086'
-API_ENDPOINT = 'query'
-INFLUX_DB = 'telegraf_test'
+API_TRANSPORTE_URL = 'https://apitransporte.buenosaires.gob.ar'
+CLIENT_ID = 'fb174c1cde604a999877a85f1e69c18c'
+CLIENT_SECRET = 'd26E1dAb300B45DC9c752514AEf7C004'
+FILENAME = 'bike_stations.json'
 
 def _url(path):
-    return API_URL + path
+    return API_TRANSPORTE_URL + path
 
-def get_influx_data(endpoint,db):
+def get_trasporte(endpoint):
     params = {
-        'q':'SELECT * FROM cpu',
+        'client_id': CLIENT_ID,
+        'client_secret':CLIENT_SECRET
         }
-    resp = requests.get(_url(endpoint) + '?db=' + db,params=params)
+    
+    resp = requests.get(_url(endpoint),params=params)
+    
     if resp.status_code != 200:
         # This means something went wrong.
         raise ValueError('GET ' + endpoint + ' error')
         
     return resp.json()
 
-def insert_influx_data(endpoint, data=""):
-    pass
+def show_results(data):
+    for key, value in data.items():
+        print('key: ' + str(key))
+        if 'data' in key:
+            for key, value in value.items():
+                print('key: ' + str(key))
+                for station in value:
+                    for key, value in station.items():
+                        if 'station_id' in key:
+                            print('#### STATION: ' + value + ' ####')
+                        print(str(key) + ' - ' + 'value: ' + str(value))
+        else:
+            print('value: ' + str(value))
 
-def update_influx_data(endpoint, data=""):
-    pass
+def save_data(data, filename):
+    f= open(filename,"w+")
+    f.write(str(data))
+    f.close()
 
+count = 1
 while True:
-    print(get_influx_data('/query',INFLUX_DB))
-    sleep(1)
+    data = get_trasporte('/ecobici/gbfs/stationStatus')
+    
+    save_data(data,FILENAME)
+
+    show_results(data)
+    print('#############')
+    print('Query #' + str(count))
+    print('#############')
+    count += 1
+    sleep(2)
