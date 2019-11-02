@@ -20,7 +20,8 @@ import pyarrow as pa
 API_TRANSPORTE_URL = 'https://apitransporte.buenosaires.gob.ar'
 CLIENT_ID = 'fb174c1cde604a999877a85f1e69c18c'
 CLIENT_SECRET = 'd26E1dAb300B45DC9c752514AEf7C004'
-FILENAME = 'reports/bike_stations_'
+#FILENAME = 'reports/bike_stations_'
+FILENAME = 'reports/bus_position_'
 COUNT = 1
 
 ###################
@@ -30,7 +31,7 @@ COUNT = 1
 def _url(path):
     return API_TRANSPORTE_URL + path
 
-def get_trasporte(endpoint):
+def get_transporte(endpoint):
     params = {
         'client_id': CLIENT_ID,
         'client_secret':CLIENT_SECRET
@@ -44,7 +45,12 @@ def get_trasporte(endpoint):
         
     return resp.json()
 
-def show_results(data):
+def show_results_bus(data):
+    for bus in data:
+        for key, value in bus.items():
+            print('key: ' + str(key) + 'value: ' + str(value))
+
+def show_results_bike(data):
     for key, value in data.items():
         print('key: ' + str(key))
         if 'data' in key:
@@ -78,7 +84,8 @@ def write_parquet_message(path):
     
     for table in tables: # .parquet file 
         now = datetime.now()
-        pq.write_table(table, 'bike_station_' + str(now) + '.parquet')
+        #print(table)
+        pq.write_table(table, 'reports/bus_position_' + str(now) + '.parquet')
 
 def read_parquet_message(path):
     pass
@@ -90,11 +97,13 @@ def read_parquet_message(path):
 threshold = input('Ingrese cantidad de iteraciones: ')
 
 while True:
-    data = get_trasporte('/ecobici/gbfs/stationStatus')
+    #data = get_trasporte('/ecobici/gbfs/stationStatus')
+    data = get_transporte('/colectivos/vehiclePositionsSimple')
     now = datetime.now()
     save_data(data,FILENAME + '_' + str(now) + '.json')
 
-    show_results(data)
+    #show_results_bike(data)
+    show_results_bus(data)
     print('#############')
     print('Query #' + str(COUNT))
     print('#############')

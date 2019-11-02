@@ -14,6 +14,11 @@ Grupo 14
 - https://www.influxdata.com/products/
 
 ### tp1
+
+API_TRANSPORTE <-----HTTP REST -----> SCRIPT <-----PARQUET -----> FILE SYSTEM
+
+Filtrar solo 20 lineas seleccionadas. Se puede hacer en query al api o al armar el .parquet file.
+
 ```
 pip install -r tp1/src/requirements.txt
 ```
@@ -46,3 +51,6 @@ client_secret: d26E1dAb300B45DC9c752514AEf7C004
 También puede navegar y obtener mas información sobre el uso desde la APIDoc: 
 
 https://apitransporte.buenosaires.gob.ar/console/
+
+#### Parquet
+- https://arrow.apache.org/docs/python/parquet.html
