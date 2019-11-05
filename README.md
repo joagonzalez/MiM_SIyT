@@ -15,7 +15,7 @@ Grupo 14
 
 ### tp1
 
-API_TRANSPORTE <-----HTTP REST -----> SCRIPT <-----PARQUET -----> FILE SYSTEM
+API_TRANSPORTE <-----HTTP REST -----> SCRIPT <-----PARQUET -----> FILE SYSTEM (1000 registriesxfile)
 
 Filtrar solo 20 lineas seleccionadas. Se puede hacer en query al api o al armar el .parquet file.
 
@@ -54,3 +54,45 @@ https://apitransporte.buenosaires.gob.ar/console/
 
 #### Parquet
 - https://arrow.apache.org/docs/python/parquet.html
+- https://github.com/chhantyal/parquet-cli (pip install parquet-cli)
+
+```
+parq bus_position_2019-11-02\ 19\:40\:53.853531.parquet 
+
+ # Metadata 
+ <pyarrow._parquet.FileMetaData object at 0x7fefaeb15158>
+  created_by: parquet-cpp version 1.5.1-SNAPSHOT
+  num_columns: 11
+  num_rows: 5349
+  num_row_groups: 1
+  format_version: 1.0
+  serialized_size: 6073
+```
+
+```
+parq bus_position_2019-11-02\ 19\:40\:53.853531.parquet  --schema
+
+ # Schema 
+ <pyarrow._parquet.ParquetSchema object at 0x7f751d2ec250>
+route_id: INT64
+latitude: DOUBLE
+longitude: DOUBLE
+speed: DOUBLE
+timestamp: INT64 Timestamp(isAdjustedToUTC=false, timeUnit=microseconds, is_from_converted_type=false, force_set_converted_type=false)
+id: INT64
+direction: INT64
+agency_name: BYTE_ARRAY String
+agency_id: INT64
+route_short_name: BYTE_ARRAY String
+trip_headsign: BYTE_ARRAY String
+```
+
+```
+parq input.parquet --count
+5349
+```
+
+```
+parq input.parquet --tail/head 10
+
+```
