@@ -7,11 +7,14 @@ import json
 import os
 from time import sleep
 from datetime import datetime
+import argparse
 
 import pyarrow.parquet as pq
 import numpy as np
 import pandas as pd
 import pyarrow as pa
+
+from influxdb import DataFrameClient
 
 ###############
 #### CONST ####
@@ -22,7 +25,12 @@ CLIENT_ID = 'fb174c1cde604a999877a85f1e69c18c'
 CLIENT_SECRET = 'd26E1dAb300B45DC9c752514AEf7C004'
 FILENAME = 'reports/bus_position_'
 COUNT = 1
-INFLUXDB = 'qwerty.com.ar'
+INFLUXDB_HOST = 'qwerty.com.ar'
+INFLUXDB_PORT = 8086
+INFLUXDB_USER = 'admin'
+INFLUXDB_PASS = ''
+INFLUXDB_DBNAME = 'mim_tp1'
+INFLUXDB_PROTOCOL = 'line'
 
 ###################
 #### FUNCTIONS ####
@@ -64,12 +72,12 @@ def show_results_bike(data):
         else:
             print('value: ' + str(value))
 
-def save_data(data, filename):
+def write_json_file(data, filename):
     f= open(filename,"w+")
     f.write(str(json.dumps(data)))
     f.close()
 
-def write_parquet_message(path):
+def write_parquet_files(path):
     list = []
     tables = []
 
@@ -77,6 +85,7 @@ def write_parquet_message(path):
 
     for file in files: # json file to pandas
         list.append(pd.read_json(path + file))
+        print(file)
 
     for element in list: # pandas to parquet
         print(element)
@@ -87,31 +96,99 @@ def write_parquet_message(path):
         #print(table)
         pq.write_table(table, 'reports_parquet/bus_position_' + str(now) + '.parquet')
 
-def read_parquet_message(path):
+def json_to_pandas(path, timestamp):
+    list = []
+
+    files = os.listdir(path)
+
+    for file in files: # json file to pandas
+        if str(timestamp) in file:
+            list.append(pd.read_json(path + file))
+        
+    return list
+
+def pandas_to_parquet(data):
+    tables = []
+    for element in data: # pandas to parquet
+        print(element)
+        tables.append(pa.Table.from_pandas(element))
+
+    return tables
+
+def write_parquet_file(path, timestamp):    
+    list = []
+    tables = []
+
+    list = json_to_pandas(path, timestamp)
+
+    tables = pandas_to_parquet(list)
+    
+    for table in tables: # .parquet file 
+        now = datetime.now()
+        #print(table)
+        pq.write_table(table, 'reports_parquet/bus_position_' + str(now) + '.parquet')
+
+def read_parquet_file(path):
     pass
 
-def write_influxdb_bus(server, data):
-    pass
+def write_influxdb(host, port, user, password, dbname, protocol, filename):
+    client = DataFrameClient(host, port, user, password, dbname)
+
+    data = pd.read_json(filename)
+    data['timestamp'] = pd.to_datetime(data['timestamp'])
+    data = data.set_index('timestamp')
+    # print('#######################################')
+    # print('printeamos data a impactar en influx: ' + str(data))
+
+    print("Create database: " + dbname)
+    if client.create_database(dbname):
+        print('database created succesfully!')
+
+    print("Write DataFrame")
+    if client.write_points(data, 'transporte', protocol=protocol):
+        print('data saved succesfully!')
+
+    # print("Read DataFrame")
+    # if client.query("select * from transporte"):
+    #     print(client.query("select * from transporte"))
+
+    #print("Delete database: " + dbname)
+    #client.drop_database(dbname)
+
+def show_loop(counter):
+    #show_results_bus(data)
+    print('#############')
+    print('Query #' + str(counter))
+    print('#############')
 
 ######################
 #### MAIN PROGRAM ####
 ######################
 
+INFLUXDB_PASS = input('Ingrese la password de influxdb: ')
 threshold = input('Ingrese cantidad de iteraciones: ')
 
 while True:
     data = get_transporte('/colectivos/vehiclePositionsSimple')
     now = datetime.now()
-    save_data(data,FILENAME + '_' + str(now) + '.json')
 
-    show_results_bus(data)
-    print('#############')
-    print('Query #' + str(COUNT))
-    print('#############')
+    print('Writing .json files file for ' + FILENAME + '_' + str(now) + '.json....')
+    write_json_file(data,FILENAME + '_' + str(now) + '.json') # json files
+    print('Writing .parquet file for bus_position_' + str(now) + '.parquet....')
+    write_parquet_file('reports/', now) # parquet files
+    print('Writing data to influx...')
+    write_influxdb(INFLUXDB_HOST, 
+        INFLUXDB_PORT, 
+        INFLUXDB_USER,
+        INFLUXDB_PASS,
+        INFLUXDB_DBNAME,
+        INFLUXDB_PROTOCOL,
+        FILENAME + '_' + str(now) + '.json'
+    )
+
+    show_loop(COUNT)
+    
     COUNT += 1
     if COUNT > int(threshold):
         break
-    sleep(2)
-
-print('Writing .parquet files....')
-write_parquet_message('reports/')
+    sleep(60)

@@ -9,7 +9,7 @@ from influxdb import DataFrameClient
 def main(host='qwerty.com.ar', port=8086):
     """Instantiate the connection to the InfluxDB client."""
     user = 'admin'
-    password = 'delfoxete87'
+    password = ''
     dbname = 'pandas'
     protocol = 'line'
 
