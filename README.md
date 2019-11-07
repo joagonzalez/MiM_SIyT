@@ -123,3 +123,6 @@ client = DataFrameClient(INFLUXDB_HOST, INFLUXDB_PORT, INFLUXDB_USER, INFLUXDB_P
 data['timestamp'] = pd.to_datetime(data['timestamp'])
 data = data.set_index('timestamp')
 ```
+
+#### telegram bot
+- https://khashtamov.com/en/how-to-create-a-telegram-bot-using-python/
