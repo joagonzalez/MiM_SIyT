@@ -8,6 +8,7 @@ import os
 from time import sleep
 from datetime import datetime
 import argparse
+import telepot
 
 import pyarrow.parquet as pq
 import numpy as np
@@ -31,6 +32,7 @@ INFLUXDB_USER = 'admin'
 INFLUXDB_PASS = ''
 INFLUXDB_DBNAME = 'mim_tp1'
 INFLUXDB_PROTOCOL = 'line'
+TELEGRAM_TOKEN = '971551324:AAGz8COn-WvxBWbbr_0N5bjeJVyIAAu487A'
 
 ###################
 #### FUNCTIONS ####
@@ -156,6 +158,21 @@ def write_influxdb(host, port, user, password, dbname, protocol, filename):
     #print("Delete database: " + dbname)
     #client.drop_database(dbname)
 
+def telegram_sendMessage(json_name, parquet_name):
+    TelegramBot = telepot.Bot(TELEGRAM_TOKEN)
+    msg_counter = 0
+    msg = TelegramBot.getUpdates()
+    for element in msg:
+        for key, value in element.items():
+            #print('key: ' + str(key))
+            #print('value: ' + str(value))
+            if 'message' in key:
+                chat_id = str(value['chat']['id'])
+                print('mensaje ' + str(msg_counter) + ': ' + str(value['text']))
+                msg_counter += 1
+    TelegramBot.sendMessage(chat_id=chat_id, parse_mode = 'html', text='<b>Nuevo archivo json creado:</b> ' + str(json_name))
+    TelegramBot.sendMessage(chat_id=chat_id, parse_mode = 'html', text='<b>Nuevo archivo parquet creado:</b> ' + str(parquet_name))
+
 def show_loop(counter):
     #show_results_bus(data)
     print('#############')
@@ -173,10 +190,12 @@ while True:
     data = get_transporte('/colectivos/vehiclePositionsSimple')
     now = datetime.now()
 
-    print('Writing .json files file for ' + FILENAME + '_' + str(now) + '.json....')
+    print('Writing .json file for ' + FILENAME + '_' + str(now) + '.json....')
     write_json_file(data,FILENAME + '_' + str(now) + '.json') # json files
     print('Writing .parquet file for bus_position_' + str(now) + '.parquet....')
     write_parquet_file('reports/', now) # parquet files
+    print('Sending telegram notification...')
+    telegram_sendMessage(FILENAME + '_' + str(now) + '.json','bus_position_' + str(now) + '.parquet')    
     print('Writing data to influx...')
     write_influxdb(INFLUXDB_HOST, 
         INFLUXDB_PORT, 
@@ -188,8 +207,7 @@ while True:
     )
 
     show_loop(COUNT)
-    
     COUNT += 1
     if COUNT > int(threshold):
         break
-    sleep(60)
+    sleep(30)
