@@ -137,6 +137,7 @@ def write_influxdb(host, port, user, password, dbname, protocol, filename):
     data = pd.read_json(filename)
     data['timestamp'] = pd.to_datetime(data['timestamp'])
     data = data.set_index('timestamp')
+    # usar tag_columns=None para tags
     # print('#######################################')
     # print('printeamos data a impactar en influx: ' + str(data))
 
