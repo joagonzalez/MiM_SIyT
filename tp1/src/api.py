@@ -60,20 +60,6 @@ def show_results_bus(data):
         for key, value in bus.items():
             print('key: ' + str(key) + 'value: ' + str(value))
 
-def show_results_bike(data):
-    for key, value in data.items():
-        print('key: ' + str(key))
-        if 'data' in key:
-            for key, value in value.items():
-                print('key: ' + str(key))
-                for station in value:
-                    for key, value in station.items():
-                        if 'station_id' in key:
-                            print('#### STATION: ' + value + ' ####')
-                        print(str(key) + ' - ' + 'value: ' + str(value))
-        else:
-            print('value: ' + str(value))
-
 def write_json_file(data, filename):
     f= open(filename,"w+")
     f.write(str(json.dumps(data)))
@@ -94,7 +80,7 @@ def write_parquet_files(path):
         tables.append(pa.Table.from_pandas(element))
     
     for table in tables: # .parquet file 
-        now = datetime.now()
+        now = datetime.now() # arreglar, usar timestamp para que parquet y json mismo nombre
         #print(table)
         pq.write_table(table, 'reports_parquet/bus_position_' + str(now) + '.parquet')
 
@@ -129,6 +115,12 @@ def write_parquet_file(path, timestamp):
         now = datetime.now()
         #print(table)
         pq.write_table(table, 'reports_parquet/bus_position_' + str(now) + '.parquet')
+
+def split_dataframe(data):
+    n = 1000  #chunk row size
+    list_df = [data[i:i+n] for i in range(0,data.shape[0],n)]
+    # lo vamos a usar en write_parquet_file
+    return [i.shape for i in list_df]  
 
 def read_parquet_file(path):
     pass
@@ -170,6 +162,7 @@ def telegram_sendMessage(json_name, parquet_name):
                 chat_id = str(value['chat']['id'])
                 print('mensaje ' + str(msg_counter) + ': ' + str(value['text']))
                 msg_counter += 1
+    TelegramBot.sendMessage(chat_id=chat_id, parse_mode = 'html', text='<b>==========================</b> ')
     TelegramBot.sendMessage(chat_id=chat_id, parse_mode = 'html', text='<b>Nuevo archivo json creado:</b> ' + str(json_name))
     TelegramBot.sendMessage(chat_id=chat_id, parse_mode = 'html', text='<b>Nuevo archivo parquet creado:</b> ' + str(parquet_name))
 
