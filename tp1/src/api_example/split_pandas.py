@@ -60,12 +60,7 @@ def split_dataframe(data):
 
     return [i.shape for i in list_df]  
 
-def split_pandas(data):
-    size = 1000
-    list_of_dfs = [data.loc[i:i+size-1,:] for i in range(0, len(data),size)]
-
-    return list_of_dfs
-
+  
 def pandas_to_parquet(data):
     tables = []
     for element in data: # pandas to parquet
@@ -82,27 +77,30 @@ def pandas_to_parquet(data):
 
     return tables
 
-def write_parquet_file(path, timestamp):    
-    list = []
-    tables = []
-    tables_split = []
-    list = json_to_pandas(path, timestamp)
+def split_pandas(data):
+    size = 1000
+    list_of_dfs = [data.loc[i:i+size-1,:] for i in range(0, len(data),size)]
 
-    tables = pandas_to_parquet(list)
-    
-    # aca spliteamos el dataframe
-    tables_split = split_dataframe(tables[0])
+    return list_of_dfs
 
+def pandas_to_parquets(data):
+    dfs = split_pandas(data) # split pandas df
+    now = datetime.now()
+    i=0
+    for element in dfs:
+        i += 1
+        print('primer df: ' + str(element))
+        element = pa.Table.from_pandas(element) # pandas to parquet
+        pq.write_table(element, '../reports_parquet/bus_position_' + str(now) + '_' + str(i) + '.parquet') # parquet file
 
-    for table in tables: # .parquet file 
-        now = datetime.now()
-        #print(table)
-        pq.write_table(table, '../reports_parquet/bus_position_' + str(now) + '.parquet')
+      
 
 # MAIN
 
 data = pd.read_json('../reports/bus_position__2019-11-12 19:42:20.426217.json')
 print(data)
 
-data_split = split_pandas(data)
-print(data_split)
+pandas_to_parquets(data)
+
+# data_split = split_pandas(data)
+# print(data_split)
