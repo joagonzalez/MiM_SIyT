@@ -33,6 +33,9 @@ INFLUXDB_PASS = ''
 INFLUXDB_DBNAME = 'mim_tp1'
 INFLUXDB_PROTOCOL = 'line'
 TELEGRAM_TOKEN = '971551324:AAGz8COn-WvxBWbbr_0N5bjeJVyIAAu487A'
+INFLUXDB_PASS = 'delfoxete87'
+threshold = '2'
+
 
 ###################
 #### FUNCTIONS ####
@@ -183,8 +186,8 @@ def show_loop(counter):
 #### MAIN PROGRAM ####
 ######################
 
-INFLUXDB_PASS = input('Ingrese la password de influxdb: ')
-threshold = input('Ingrese cantidad de iteraciones: ')
+# INFLUXDB_PASS = input('Ingrese la password de influxdb: ')
+# threshold = input('Ingrese cantidad de iteraciones: ')
 
 while True:
     data = get_transporte('/colectivos/vehiclePositionsSimple')
