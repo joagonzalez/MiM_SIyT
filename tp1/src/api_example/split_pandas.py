@@ -54,12 +54,6 @@ def json_to_pandas(path, timestamp):
         
     return list
 
-def split_dataframe(data):
-    n = 300  #chunk row size
-    list_df = [data[i:i+n] for i in range(0,data.shape[0],n)]
-
-    return [i.shape for i in list_df]  
-
   
 def pandas_to_parquet(data):
     tables = []

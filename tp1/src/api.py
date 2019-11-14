@@ -103,24 +103,31 @@ def pandas_to_parquet(data):
 
     return tables
 
+def split_pandas(data):
+    size = 1000
+    dataframe_chunks = [data.loc[i:i+size-1,:] for i in range(0, len(data),size)]
+
+    return dataframe_chunks
+
 def write_parquet_file(path, timestamp):    
     list = []
     tables = []
 
     list = json_to_pandas(path, timestamp)
 
-    tables = pandas_to_parquet(list)
-    
-    for table in tables: # .parquet file 
-        now = datetime.now()
-        #print(table)
-        pq.write_table(table, 'reports_parquet/bus_position_' + str(now) + '.parquet')
-
-def split_dataframe(data):
-    n = 1000  #chunk row size
-    list_df = [data[i:i+n] for i in range(0,data.shape[0],n)]
-    # lo vamos a usar en write_parquet_file
-    return [i.shape for i in list_df]  
+    for df in list:
+        dfs = split_pandas(df)
+        i = 0
+        for element in dfs:
+            i += 1
+            print('df numero '+ str(i) + ': ' + str(element))
+            element = pa.Table.from_pandas(element) # pandas to parquet
+            pq.write_table(element, 'reports_parquet/bus_position_' + str(timestamp) + '_' + str(i) + '.parquet') # parquet file
+  
+    # tables = pandas_to_parquet(list)
+    # for table in tables: # .parquet file 
+    #     #print(table)
+    #     pq.write_table(table, 'reports_parquet/bus_position_' + str(timestamp) + '.parquet')
 
 def read_parquet_file(path):
     pass
