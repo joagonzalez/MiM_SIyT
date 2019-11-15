@@ -20,11 +20,27 @@ API_TRANSPORTE <-----HTTP REST -----> SCRIPT <-----PARQUET -----> FILE SYSTEM (1
 Filtrar solo 20 lineas seleccionadas. Se puede hacer en query al api o al armar el .parquet file.
 
 ```
-pip install -r tp1/src/requirements.txt
+pip3 install -r tp1/src/requirements.txt
 ```
 
 ```
 sudo apt install protobuf-compiler
+```
+
+Ejecutar script: 
+
+``` 
+python3 api.py 
+```
+
+Directorios con archivos json y parquet
+
+```
+- reports
+|
+|--- json
+|--- parquet
+
 ```
 
 #### Protobuf
