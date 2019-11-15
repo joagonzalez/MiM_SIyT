@@ -24,7 +24,7 @@ from influxdb import DataFrameClient
 API_TRANSPORTE_URL = 'https://apitransporte.buenosaires.gob.ar'
 CLIENT_ID = 'fb174c1cde604a999877a85f1e69c18c'
 CLIENT_SECRET = 'd26E1dAb300B45DC9c752514AEf7C004'
-FILENAME = 'reports/bus_position_'
+FILENAME = 'reports/json/bus_position_'
 COUNT = 1
 INFLUXDB_HOST = 'qwerty.com.ar'
 INFLUXDB_PORT = 8086
@@ -34,7 +34,7 @@ INFLUXDB_DBNAME = 'mim_tp1'
 INFLUXDB_PROTOCOL = 'line'
 TELEGRAM_TOKEN = '971551324:AAGz8COn-WvxBWbbr_0N5bjeJVyIAAu487A'
 INFLUXDB_PASS = 'delfoxete87'
-threshold = '2'
+threshold = '5'
 
 
 ###################
@@ -68,25 +68,6 @@ def write_json_file(data, filename):
     f.write(str(json.dumps(data)))
     f.close()
 
-def write_parquet_files(path):
-    list = []
-    tables = []
-
-    files = os.listdir(path)
-
-    for file in files: # json file to pandas
-        list.append(pd.read_json(path + file))
-        print(file)
-
-    for element in list: # pandas to parquet
-        print(element)
-        tables.append(pa.Table.from_pandas(element))
-    
-    for table in tables: # .parquet file 
-        now = datetime.now() # arreglar, usar timestamp para que parquet y json mismo nombre
-        #print(table)
-        pq.write_table(table, 'reports_parquet/bus_position_' + str(now) + '.parquet')
-
 def json_to_pandas(path, timestamp):
     list = []
 
@@ -116,7 +97,7 @@ def write_parquet_file(path, timestamp):
     list = []
     tables = []
 
-    list = json_to_pandas(path, timestamp)
+    list = json_to_pandas(path + '/json/', timestamp)
 
     for df in list:
         dfs = split_pandas(df)
@@ -125,13 +106,8 @@ def write_parquet_file(path, timestamp):
             i += 1
             print('df numero '+ str(i) + ': ' + str(element))
             element = pa.Table.from_pandas(element) # pandas to parquet
-            pq.write_table(element, 'reports_parquet/bus_position_' + str(timestamp) + '_' + str(i) + '.parquet') # parquet file
+            pq.write_table(element, path + 'parquet/bus_position_' + str(timestamp) + '_' + str(i) + '.parquet') # parquet file
   
-    # tables = pandas_to_parquet(list)
-    # for table in tables: # .parquet file 
-    #     #print(table)
-    #     pq.write_table(table, 'reports_parquet/bus_position_' + str(timestamp) + '.parquet')
-
 def read_parquet_file(path):
     pass
 
@@ -169,7 +145,7 @@ def telegram_sendMessage(json_name, parquet_name):
             #print('key: ' + str(key))
             #print('value: ' + str(value))
             if 'message' in key:
-                chat_id = str(value['chat']['id'])
+                chat_id = str(value['chat']['id']) # catchear si no existe chat_id
                 print('mensaje ' + str(msg_counter) + ': ' + str(value['text']))
                 msg_counter += 1
     TelegramBot.sendMessage(chat_id=chat_id, parse_mode = 'html', text='<b>==========================</b> ')
@@ -182,6 +158,25 @@ def show_loop(counter):
     print('Query #' + str(counter))
     print('#############')
 
+def create_dir_structure():
+    if not os.path.exists('reports/'):
+        print('creando directorio reports/')
+        os.makedirs('reports/')
+    else:
+        print('directorio reports/ existe!')
+
+    if not os.path.exists('reports/json/'):
+        print('creando directorio reports/json/')
+        os.makedirs('reports/json/')
+    else:
+        print('directorio reports/json/ existe!')
+
+    if not os.path.exists('reports/parquet/'):
+        print('creando directorio reports/parquet/')
+        os.makedirs('reports/parquet/')
+    else:
+        print('directorio reports/parquet/ existe!')
+        
 ######################
 #### MAIN PROGRAM ####
 ######################
@@ -189,25 +184,34 @@ def show_loop(counter):
 # INFLUXDB_PASS = input('Ingrese la password de influxdb: ')
 # threshold = input('Ingrese cantidad de iteraciones: ')
 
+influxdb_enable = input('Desea enviar datos recolectados a influxdb? [S/N]: ')
+telegrambot_enable = input('Desea enviar notificaciones a bot telegram? [S/N]: ')
+
 while True:
     data = get_transporte('/colectivos/vehiclePositionsSimple')
     now = datetime.now()
+
+    create_dir_structure()
 
     print('Writing .json file for ' + FILENAME + '_' + str(now) + '.json....')
     write_json_file(data,FILENAME + '_' + str(now) + '.json') # json files
     print('Writing .parquet file for bus_position_' + str(now) + '.parquet....')
     write_parquet_file('reports/', now) # parquet files
-    print('Sending telegram notification...')
-    telegram_sendMessage(FILENAME + '_' + str(now) + '.json','bus_position_' + str(now) + '.parquet')    
-    print('Writing data to influx...')
-    write_influxdb(INFLUXDB_HOST, 
-        INFLUXDB_PORT, 
-        INFLUXDB_USER,
-        INFLUXDB_PASS,
-        INFLUXDB_DBNAME,
-        INFLUXDB_PROTOCOL,
-        FILENAME + '_' + str(now) + '.json'
-    )
+    
+    if 'S' in telegrambot_enable:
+        print('Sending telegram notification...')
+        telegram_sendMessage(FILENAME + '_' + str(now) + '.json','bus_position_' + str(now) + '.parquet')  
+
+    if 'S' in influxdb_enable:
+        print('Writing data to influx...')
+        write_influxdb(INFLUXDB_HOST, 
+            INFLUXDB_PORT, 
+            INFLUXDB_USER,
+            INFLUXDB_PASS,
+            INFLUXDB_DBNAME,
+            INFLUXDB_PROTOCOL,
+            FILENAME + '_' + str(now) + '.json'
+        )
 
     show_loop(COUNT)
     COUNT += 1

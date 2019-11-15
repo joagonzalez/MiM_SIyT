@@ -1,7 +1,8 @@
 FROM python:3.7.5-stretch
 
 RUN mkdir -p /app/reports
-RUN mkdir -p /app/reports_parquet
+RUN mkdir -p /app/reports/parquet
+RUN mkdir -p /app/reports/json
 RUN apt-get update
 RUN apt-get install gcc
 RUN apt-get install libsnappy-dev -y
