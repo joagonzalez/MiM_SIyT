@@ -25,6 +25,7 @@ pip3 install -r tp1/src/requirements.txt
 
 ```
 sudo apt install protobuf-compiler
+sudo apt install libsnappy-dev
 ```
 
 Ejecutar script: 
@@ -41,6 +42,12 @@ Directorios con archivos json y parquet
 |--- json
 |--- parquet
 
+```
+
+#### Ejecutar desde docker
+```
+docker build -t mim_tp1:1.x .
+docker run -v ./reports:/app/reports mim_tp1:1.x
 ```
 
 #### Protobuf

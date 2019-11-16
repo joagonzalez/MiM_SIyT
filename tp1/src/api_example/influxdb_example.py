@@ -13,7 +13,7 @@ loginEvents = [{"measurement":"UserLogins",
         },
         {"measurement":"UserLogins",
           "tags": {
-            "Area": "South America",
+            "Area": "South America-popo",
             "Location": "Lima",
             "ClientIP": "192.168.1.256"
         },
@@ -24,7 +24,7 @@ loginEvents = [{"measurement":"UserLogins",
     }        
 ]
 
-dbClient = InfluxDBClient('qwerty.com.ar', 8086, 'admin', 'delfoxete87', 'AccessHistory')
+dbClient = InfluxDBClient('qwerty.com.ar', 8086, 'mim_tp1', 'mim_tp1_transporte', 'AccessHistory')
 
 # Write the time series data points into database - user login details
 dbClient.create_database('AccessHistory')

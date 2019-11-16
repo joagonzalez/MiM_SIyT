@@ -28,13 +28,12 @@ FILENAME = 'reports/json/bus_position_'
 COUNT = 1
 INFLUXDB_HOST = 'qwerty.com.ar'
 INFLUXDB_PORT = 8086
-INFLUXDB_USER = 'admin'
-INFLUXDB_PASS = ''
+INFLUXDB_USER = 'mim_tp1'
+INFLUXDB_PASS = 'mim_tp1_transporte'
 INFLUXDB_DBNAME = 'mim_tp1'
 INFLUXDB_PROTOCOL = 'line'
 TELEGRAM_TOKEN = '971551324:AAGz8COn-WvxBWbbr_0N5bjeJVyIAAu487A'
-INFLUXDB_PASS = 'delfoxete87'
-threshold = '5'
+threshold = '99999'
 
 
 ###################
@@ -181,11 +180,15 @@ def create_dir_structure():
 #### MAIN PROGRAM ####
 ######################
 
+# if manual
+#threshold = input('Ingrese cantidad de iteraciones: ')
+#influxdb_enable = input('Desea enviar datos recolectados a influxdb? [S/N]: ')
+#telegrambot_enable = input('Desea enviar notificaciones a bot telegram? [S/N]: ')
 # INFLUXDB_PASS = input('Ingrese la password de influxdb: ')
-# threshold = input('Ingrese cantidad de iteraciones: ')
 
-influxdb_enable = input('Desea enviar datos recolectados a influxdb? [S/N]: ')
-telegrambot_enable = input('Desea enviar notificaciones a bot telegram? [S/N]: ')
+# if docker
+influxdb_enable = 'S'
+telegrambot_enable = 'S'
 
 while True:
     data = get_transporte('/colectivos/vehiclePositionsSimple')
@@ -217,4 +220,4 @@ while True:
     COUNT += 1
     if COUNT > int(threshold):
         break
-    sleep(30)
+    sleep(60)
