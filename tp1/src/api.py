@@ -25,7 +25,6 @@ API_TRANSPORTE_URL = 'https://apitransporte.buenosaires.gob.ar'
 CLIENT_ID = 'fb174c1cde604a999877a85f1e69c18c'
 CLIENT_SECRET = 'd26E1dAb300B45DC9c752514AEf7C004'
 FILENAME = 'reports/json/bus_position_'
-COUNT = 1
 INFLUXDB_HOST = 'qwerty.com.ar'
 INFLUXDB_PORT = 8086
 INFLUXDB_USER = 'mim_tp1'
@@ -67,7 +66,7 @@ def write_json_file(data, filename):
     f.write(str(json.dumps(data)))
     f.close()
 
-def json_to_pandas(path, timestamp):
+def jsonFile_to_pandas(path, timestamp):
     list = []
 
     files = os.listdir(path)
@@ -77,6 +76,16 @@ def json_to_pandas(path, timestamp):
             list.append(pd.read_json(path + file))
         
     return list
+
+def json_to_pandas(data, timestamp):
+    df_list = []
+
+    for query_data in data: # json to pandas
+        df_list.append(pd.read_json(query_data))
+
+    df = pd.concat(df_list)        
+    
+    return df
 
 def pandas_to_parquet(data):
     tables = []
@@ -107,6 +116,15 @@ def write_parquet_file(path, timestamp):
             element = pa.Table.from_pandas(element) # pandas to parquet
             pq.write_table(element, path + 'parquet/bus_position_' + str(timestamp) + '_' + str(i) + '.parquet') # parquet file
   
+def store_data(data, timestamp, counter):
+    path = 'reports/'
+    print(str(counter) + ': ' + str(data))
+
+    df_data = json_to_pandas(data, timestamp)
+
+    parquet_data = pa.Table.from_pandas(df_data) # pandas to parquet
+    pq.write_table(parquet_data, path + 'parquet/bus_position_' + str(timestamp) + '_' + str(counter) + '.parquet') # parquet file
+
 def read_parquet_file(path):
     pass
 
@@ -128,14 +146,8 @@ def write_influxdb(host, port, user, password, dbname, protocol, filename):
     if client.write_points(data, 'transporte', protocol=protocol):
         print('data saved succesfully!')
 
-    # print("Read DataFrame")
-    # if client.query("select * from transporte"):
-    #     print(client.query("select * from transporte"))
 
-    #print("Delete database: " + dbname)
-    #client.drop_database(dbname)
-
-def telegram_sendMessage(json_name, parquet_name):
+def telegram_sendMessage(parquet_name):
     TelegramBot = telepot.Bot(TELEGRAM_TOKEN)
     msg_counter = 0
     msg = TelegramBot.getUpdates()
@@ -148,7 +160,7 @@ def telegram_sendMessage(json_name, parquet_name):
                 print('mensaje ' + str(msg_counter) + ': ' + str(value['text']))
                 msg_counter += 1
     TelegramBot.sendMessage(chat_id=chat_id, parse_mode = 'html', text='<b>==========================</b> ')
-    TelegramBot.sendMessage(chat_id=chat_id, parse_mode = 'html', text='<b>Nuevo archivo json creado:</b> ' + str(json_name))
+    #TelegramBot.sendMessage(chat_id=chat_id, parse_mode = 'html', text='<b>Nuevo archivo json creado:</b> ' + str(json_name))
     TelegramBot.sendMessage(chat_id=chat_id, parse_mode = 'html', text='<b>Nuevo archivo parquet creado:</b> ' + str(parquet_name))
 
 def show_loop(counter):
@@ -182,6 +194,7 @@ def create_dir_structure():
 
 # if manual
 #threshold = input('Ingrese cantidad de iteraciones: ')
+COUNT = input('Ingrese valor de counter: ')
 #influxdb_enable = input('Desea enviar datos recolectados a influxdb? [S/N]: ')
 #telegrambot_enable = input('Desea enviar notificaciones a bot telegram? [S/N]: ')
 # INFLUXDB_PASS = input('Ingrese la password de influxdb: ')
@@ -190,20 +203,31 @@ def create_dir_structure():
 influxdb_enable = 'S'
 telegrambot_enable = 'S'
 
+buffer = []
 while True:
-    data = get_transporte('/colectivos/vehiclePositionsSimple')
-    now = datetime.now()
 
+    now = datetime.now()
+    COUNT = int(COUNT)
     create_dir_structure()
 
+    if len(buffer) >= 3:
+        print('Writing .parquet file for bus_position_' + str(now) + '.parquet....')
+        store_data(buffer, now, COUNT) # parquet files
+
+        if 'S' in telegrambot_enable:
+            print('Sending telegram notification...')
+            telegram_sendMessage('bus_position_' + str(now) + '.parquet')  
+
+        COUNT += 1
+        buffer = []
+
+    print('getting data...')
+    data = get_transporte('/colectivos/vehiclePositionsSimple')
+    buffer.append(data)  
+    print('buffer size: ' + str(len(buffer)))
+    
     print('Writing .json file for ' + FILENAME + '_' + str(now) + '.json....')
     write_json_file(data,FILENAME + '_' + str(now) + '.json') # json files
-    print('Writing .parquet file for bus_position_' + str(now) + '.parquet....')
-    write_parquet_file('reports/', now) # parquet files
-    
-    if 'S' in telegrambot_enable:
-        print('Sending telegram notification...')
-        telegram_sendMessage(FILENAME + '_' + str(now) + '.json','bus_position_' + str(now) + '.parquet')  
 
     if 'S' in influxdb_enable:
         print('Writing data to influx...')
@@ -217,7 +241,7 @@ while True:
         )
 
     show_loop(COUNT)
-    COUNT += 1
+    
     if COUNT > int(threshold):
         break
-    sleep(60)
+    sleep(30)
