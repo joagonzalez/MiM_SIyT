@@ -1,4 +1,9 @@
+python-snappy
+requests
+cython
 pyarrow
 protobuf
 pandas
 parquet
+telepot
+influxdb

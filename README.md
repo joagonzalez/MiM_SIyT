@@ -20,11 +20,34 @@ API_TRANSPORTE <-----HTTP REST -----> SCRIPT <-----PARQUET -----> FILE SYSTEM (1
 Filtrar solo 20 lineas seleccionadas. Se puede hacer en query al api o al armar el .parquet file.
 
 ```
-pip install -r tp1/src/requirements.txt
+pip3 install -r tp1/src/requirements.txt
 ```
 
 ```
 sudo apt install protobuf-compiler
+sudo apt install libsnappy-dev
+```
+
+Ejecutar script: 
+
+``` 
+python3 api.py 
+```
+
+Directorios con archivos json y parquet
+
+```
+- reports
+|
+|--- json
+|--- parquet
+
+```
+
+#### Ejecutar desde docker
+```
+docker build -t mim_tp1:1.x .
+docker run -v ./reports:/app/reports mim_tp1:1.x
 ```
 
 #### Protobuf
@@ -96,3 +119,33 @@ parq input.parquet --count
 parq input.parquet --tail/head 10
 
 ```
+
+#### influx
+```
+import os
+import pandas as pd
+from influxdb import DataFrameClient
+
+INFLUXDB_HOST = 'qwerty.com.ar'
+INFLUXDB_PORT = 8086
+INFLUXDB_USER = 'admin'
+INFLUXDB_PASS = 'lalal'
+INFLUXDB_DBNAME = 'mim_tp1'
+INFLUXDB_PROTOCOL = 'line'
+
+
+files = os.listdir('/home/jgonzalez/dev/MiM_SIyT/tp1/src/reports')
+data = pd.read_json('/home/jgonzalez/dev/MiM_SIyT/tp1/src/reports/bus_position__2019-11-06 00:26:02.636138.json')
+
+
+
+
+client = DataFrameClient(INFLUXDB_HOST, INFLUXDB_PORT, INFLUXDB_USER, INFLUXDB_PASS, INFLUXDB_DBNAME)
+
+
+data['timestamp'] = pd.to_datetime(data['timestamp'])
+data = data.set_index('timestamp')
+```
+
+#### telegram bot
+- https://khashtamov.com/en/how-to-create-a-telegram-bot-using-python/
