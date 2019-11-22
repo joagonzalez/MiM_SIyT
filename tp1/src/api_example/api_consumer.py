@@ -25,6 +25,6 @@ if __name__ == '__main__':
        counter += 1
        data = []
     datum = get_data()
-    data.append(datum)
+    data.extend(datum)
     
     time.sleep(60)

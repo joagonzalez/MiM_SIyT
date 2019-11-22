@@ -23,19 +23,22 @@ from influxdb import DataFrameClient
 ###############
 
 API_TRANSPORTE_URL = 'https://apitransporte.buenosaires.gob.ar'
-CLIENT_ID = 'fb174c1cde604a999877a85f1e69c18c'
-CLIENT_SECRET = 'd26E1dAb300B45DC9c752514AEf7C004'
 FILENAME = 'reports/json/bus_position_'
-COUNT = 1
+QRY_LENGTH = 1000
+JSON_PATH = 'reports/json/'
+PARQUET_PATH = 'reports/parquet/'
+LINEAS = ['29A','41A','44A','57A','59A','63A','65A','67A','68A','80A','107A','113A','133A','152A','161A','168A','184A','194A']
+
+INFLUXDB_ENABLED = 'S'
 INFLUXDB_HOST = 'qwerty.com.ar'
 INFLUXDB_PORT = 8086
 INFLUXDB_USER = 'mim_tp1'
 INFLUXDB_PASS = 'mim_tp1_transporte'
 INFLUXDB_DBNAME = 'mim_tp1'
 INFLUXDB_PROTOCOL = 'line'
+TELEGRAM_ENABLED = 'S'
 TELEGRAM_TOKEN = '971551324:AAGz8COn-WvxBWbbr_0N5bjeJVyIAAu487A'
-LINEAS = ['29A','41A','44A','57A','59A','63A','65A','67A','68A','80A','107A','113A','133A','152A','161A','168A','184A','194A']
-# '60S','60T','60L','60H','60K','60R','194D','194E','194F','194G','194H','194I','194J','57B','68B','168C','168D','107B','80B','65B','59C','161B','168B','194B','63B','113B','152B','59B','29B','60U',
+
 def _url(path):
     return API_TRANSPORTE_URL + path
 
@@ -47,9 +50,8 @@ def filter_lines(data):
         for point in data:
             if element == point['route_short_name']:
                result.append(point)
-               print('appendeo punto a lista filtrada: ' + str(point))
     
-    print('el tamaño del append es: ' + str(len(result)))
+    print('Size of data appended after filter function is : ' + str(len(result)))
     return result
 
 def get_data(endpoint): 
@@ -63,58 +65,108 @@ def get_data(endpoint):
     if resp.status_code != 200:
         raise ValueError('GET ' + endpoint + ' error')
     
-    # aca hay que filtrar las 20 lineas
-    data = filter_lines(resp)
-    
-    return data
+    return filter_lines(resp)
 
-def store_data(data, counter):
-    # aca pasamos a pandas y luego a parquet la lista json que nos viene de queries con API
-    print(str(counter) + ': ' + str(data))
+def store_data(data, counter, timestamp):
+    df = pd.DataFrame(data)
+    print('Printing dataframe to save: ' + str(df))
+    table =  pandas_to_parquet(df)
+    print('Saving .parquet file ' + PARQUET_PATH + 'bus_position_' + str(timestamp) + '_' + str(counter) + '.parquet!')
+    pq.write_table(table, PARQUET_PATH + 'bus_position_' + str(timestamp) + '_' + str(counter) + '.parquet') # parquet file
 
 def write_json_file(data, filename):
     f= open(filename,"w+")
     f.write(str(json.dumps(data)))
     f.close()
 
-def json_to_pandas(path, timestamp):
-    list = []
+def pandas_to_parquet(dataframe):
+    result = pa.Table.from_pandas(dataframe)
 
-    files = os.listdir(path)
+    return result
 
-    for file in files: # json file to pandas
-        if str(timestamp) in file:
-            list.append(pd.read_json(path + file))
-        
-    return list
-
-def pandas_to_parquet(data):
-    tables = []
-    for element in data: # pandas to parquet
-        print(element)
-        tables.append(pa.Table.from_pandas(element))
-
-    return tables
+def save_json_data(data, counter, timestamp):
+    print('Saving .json file for ' + JSON_PATH + 'bus_' + str(timestamp) + '_' + str(counter) + '.json!')
+    write_json_file(data, JSON_PATH + 'bus_' + str(now) + '_' + str(counter) + '.json')
  
 def create_dir_structure():
     if not os.path.exists('reports/'):
-        print('creando directorio reports/')
+        print('creating directory reports/')
         os.makedirs('reports/')
     else:
-        print('directorio reports/ existe!')
+        print('directory reports/ exists!')
 
     if not os.path.exists('reports/json/'):
-        print('creando directorio reports/json/')
+        print('creating directory reports/json/')
         os.makedirs('reports/json/')
     else:
-        print('directorio reports/json/ existe!')
+        print('directory reports/json/ exists!')
 
     if not os.path.exists('reports/parquet/'):
-        print('creando directorio reports/parquet/')
+        print('creating directory reports/parquet/')
         os.makedirs('reports/parquet/')
     else:
-        print('directorio reports/parquet/ existe!')
-  
+        print('directory reports/parquet/ exists!')
+    
+    print('###############################################')
+
+def write_influxdb(host, port, user, password, dbname, protocol, filename):
+    client = DataFrameClient(host, port, user, password, dbname)
+
+    data = pd.read_json(filename)
+    data['timestamp'] = pd.to_datetime(data['timestamp'])
+    data = data.set_index('timestamp')
+    # falta escribir tags
+    print("Create database: " + dbname)
+    if client.create_database(dbname):
+        print('database created succesfully!')
+
+    print("Write DataFrame")
+    if client.write_points(data, 'transporte',protocol=protocol):
+        print('data saved succesfully!')
+
+def telegram_sendMessage(json_name, parquet_name):
+    TelegramBot = telepot.Bot(TELEGRAM_TOKEN)
+    msg_counter = 0
+    msg = TelegramBot.getUpdates()
+    for element in msg:
+        for key, value in element.items():
+            if 'message' in key:
+                chat_id = str(value['chat']['id']) # catchear si no existe chat_id
+                print('mensaje ' + str(msg_counter) + ': ' + str(value['text']))
+                msg_counter += 1
+    TelegramBot.sendMessage(chat_id=chat_id, parse_mode = 'html', text='<b>==========================</b> ')
+    TelegramBot.sendMessage(chat_id=chat_id, parse_mode = 'html', text='<b>Nuevo archivo json creado:</b> ' + str(json_name))
+    TelegramBot.sendMessage(chat_id=chat_id, parse_mode = 'html', text='<b>Nuevo archivo parquet creado:</b> ' + str(parquet_name))
+
+def report_data(data, counter, timestamp):
+    save_json_data(data,counter,timestamp) 
+
+    JSON_FILE = JSON_PATH + 'bus_' + str(now) + '_' + str(counter) + '.json'
+    PARQUET_FILE = PARQUET_PATH + 'bus_' + str(now) + '_' + str(counter) + '.parquet'  
+
+    if 'S' in INFLUXDB_ENABLED:
+        print('Writing data to influx...')
+        try:
+            write_influxdb(INFLUXDB_HOST, 
+                INFLUXDB_PORT, 
+                INFLUXDB_USER,
+                INFLUXDB_PASS,
+                INFLUXDB_DBNAME,
+                INFLUXDB_PROTOCOL,
+                JSON_FILE
+            )
+        except:
+            print('Error trying to write data points into influxdb..')
+
+    if ('S' in TELEGRAM_ENABLED) and (counter % 10 == 0):
+        try:
+            print('Sending telegram notification...')
+            telegram_sendMessage(JSON_FILE, PARQUET_FILE)  
+        except:
+            print('Error trying to send telegram notification..')
+    print('###############################################')    
+
+
 if __name__ == '__main__':
     if len(sys.argv) != 4:
         print('Usage: <access_token> <access_token_secret> <first_file_no>')
@@ -124,15 +176,20 @@ if __name__ == '__main__':
     counter = int(sys.argv[3])
 
     data = []
-    create_dir_structure()  
+    create_dir_structure() 
+
     while True:
-        if len(data) >= 1000:
-            store_data(data, counter)
+        now = datetime.now()
+        if len(data) >= QRY_LENGTH:
+            store_data(data, counter, now)
+            report_data(data, counter, now)
             counter += 1
             data = []
 
         datum = get_data('/colectivos/vehiclePositionsSimple')
-        data.append(datum)
-        write_json_file(data,'test_' + str(counter) + '.json')
+        data.extend(datum)
 
-        sleep(10)
+        print('Size of filtered list is: ' + str(len(data)))
+        print('###############################################')
+
+        sleep(60)
