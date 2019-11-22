@@ -9,6 +9,7 @@ import sys
 from time import sleep
 from datetime import datetime
 import argparse
+import logging
 import telepot
 
 import pyarrow.parquet as pq
@@ -62,11 +63,12 @@ def get_data(endpoint):
     
     resp = requests.get(_url(endpoint),params=params)
     
-    if resp.status_code != 200:
-        raise ValueError('GET ' + endpoint + ' error')
+    if resp.status_code == 200:
+        return filter_lines(resp)
+        
+    logging.error('Status code: ' + str(resp.status_code))
+    return None
     
-    return filter_lines(resp)
-
 def store_data(data, counter, timestamp):
     df = pd.DataFrame(data)
     print('Printing dataframe to save: ' + str(df))
@@ -187,7 +189,9 @@ if __name__ == '__main__':
             data = []
 
         datum = get_data('/colectivos/vehiclePositionsSimple')
-        data.extend(datum)
+        
+        if datum is not None:
+            data.extend(datum)
 
         print('Size of filtered list is: ' + str(len(data)))
         print('###############################################')
