@@ -73,8 +73,8 @@ def store_data(data, counter, timestamp):
     df = pd.DataFrame(data)
     print('Printing dataframe to save: ' + str(df))
     table =  pandas_to_parquet(df)
-    print('Saving .parquet file ' + PARQUET_PATH + 'bus_position_' + str(timestamp) + '_' + str(counter) + '.parquet!')
-    pq.write_table(table, PARQUET_PATH + 'bus_position_' + str(timestamp) + '_' + str(counter) + '.parquet') # parquet file
+    print('Saving .parquet file ' + PARQUET_PATH + 'bus_position_' + '_' + str(counter) + '.parquet!')
+    pq.write_table(table, PARQUET_PATH + 'bus_position_' + '_' + str(counter) + '.parquet') # parquet file
 
 def write_json_file(data, filename):
     f= open(filename,"w+")
@@ -87,8 +87,8 @@ def pandas_to_parquet(dataframe):
     return result
 
 def save_json_data(data, counter, timestamp):
-    print('Saving .json file for ' + JSON_PATH + 'bus_' + str(timestamp) + '_' + str(counter) + '.json!')
-    write_json_file(data, JSON_PATH + 'bus_' + str(now) + '_' + str(counter) + '.json')
+    print('Saving .json file for ' + JSON_PATH + 'bus_' + '_' + str(counter) + '.json!')
+    write_json_file(data, JSON_PATH + 'bus_' + '_' + str(counter) + '.json')
  
 def create_dir_structure():
     if not os.path.exists('reports/'):
@@ -196,4 +196,4 @@ if __name__ == '__main__':
         print('Size of filtered list is: ' + str(len(data)))
         print('###############################################')
 
-        sleep(60)
+        sleep(16)
