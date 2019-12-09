@@ -61,10 +61,17 @@ def process_transformed(files):
     # - interno más rápido de cada línea
     
 if __name__ == '__main__':
+<<<<<<< HEAD
     input_path = '/code/MiM_SIyT/src/reports/parquet/*.parquet'
     all_files = natsorted(glob.glob(input_path))
     print(input_path)
     chunk_size = 50
+=======
+    input_path = '/home/jgonzalez/dev/MiM_SIyT/src/reports/parquet/*.parquet'
+    all_files = natsorted(glob.glob(input_path))
+    print(input_path)
+    chunk_size = 5
+>>>>>>> ec777f1347a0e6e594b846dfab240ba794192346
     chunks = [all_files[i:i + chunk_size] for i in range(0, len(all_files), chunk_size)]    
     print(str(chunks))
 
