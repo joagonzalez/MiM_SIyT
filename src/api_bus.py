@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 ###################
 #### LIBRARIES ####
 ###################
@@ -61,11 +63,19 @@ def get_data(endpoint):
         'client_secret': access_token_secret
         }
     
-    resp = requests.get(_url(endpoint),params=params)
-    
-    if resp.status_code == 200:
-        return filter_lines(resp)
+    # headers = requests.utils.default_headers()
+    # headers['User-Agent'] = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:70.0) Gecko/20100101 Firefox/70.0 '
+
+    try:
+        resp = requests.get(_url(endpoint),params=params) # headers=headers
         
+        if resp.status_code == 200:
+            logging.info('Status code: ' + str(resp.status_code))
+            return filter_lines(resp)
+    except:
+        logging.error('timeout problem!')
+        return None
+    
     logging.error('Status code: ' + str(resp.status_code))
     return None
     
