@@ -7,4 +7,5 @@ pandas
 parquet
 telepot
 influxdb
-
+geopy
+natsort
