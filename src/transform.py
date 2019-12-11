@@ -15,6 +15,7 @@ def build_batch(files):
     for file in files:
         dataframes.append(pyarrow.parquet.read_pandas(file).to_pandas())
     batch = pandas.concat(dataframes)
+    # devuelve 1 df con los datos de 50 archivos concatenados (chunk)
     return batch
 
 def process_batch(batch, counter):
@@ -44,6 +45,21 @@ def process_batch(batch, counter):
     # Finalmente hay que escribir un nuevo parquet con toda la información generada
     # parquet.write_table(table, 'transformed_' + str(counter))
     
+    # armamos algo asi como salida de la funcion
+    # [
+    #   {
+    #     "distance": -34.65946,
+    #     "time": 1234,
+    #     "day": 1572732090,
+    #     "id": "1822",
+    #     "route_short_name": "253A"
+    #   }
+    # ]
+
+    # tiempo max del batch para cada linea - tiempo min del batch por linea = tiempo
+    # distance = posicion tiempo max  - posicion tiempo min
+    # si el batch empieza en dia A pero termina en dia B contamos como recorrido de dia B?
+    #  
     print('processed batch')
 
 
@@ -60,18 +76,16 @@ def process_transformed(files):
     # - velocidad por día de cada línea
     # - interno más rápido de cada línea
     
+def speed_average_day():
+    pass
+def speed_max_line():
+    pass
 if __name__ == '__main__':
-<<<<<<< HEAD
     input_path = '/code/MiM_SIyT/src/reports/parquet/*.parquet'
     all_files = natsorted(glob.glob(input_path))
     print(input_path)
     chunk_size = 50
-=======
-    input_path = '/home/jgonzalez/dev/MiM_SIyT/src/reports/parquet/*.parquet'
-    all_files = natsorted(glob.glob(input_path))
-    print(input_path)
-    chunk_size = 5
->>>>>>> ec777f1347a0e6e594b846dfab240ba794192346
+
     chunks = [all_files[i:i + chunk_size] for i in range(0, len(all_files), chunk_size)]    
     print(str(chunks))
 
