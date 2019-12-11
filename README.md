@@ -13,7 +13,7 @@ Grupo 14
 - https://neo4j.com/developer/docker-run-neo4j/
 - https://www.influxdata.com/products/
 
-### tp1
+### tp1: api_bus.py
 
 API_TRANSPORTE <-----HTTP REST -----> SCRIPT <-----PARQUET -----> FILE SYSTEM (1000 registriesxfile)
 
@@ -149,3 +149,7 @@ data = data.set_index('timestamp')
 
 #### telegram bot
 - https://khashtamov.com/en/how-to-create-a-telegram-bot-using-python/
+
+### tp2: transform.py
+
+Procesamiento de los datos recolectados con api_bus.py
