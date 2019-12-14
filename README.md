@@ -41,6 +41,7 @@ Directorios con archivos json y parquet
 |
 |--- json
 |--- parquet
+    |---chunks
 
 ```
 
