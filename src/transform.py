@@ -18,8 +18,8 @@ from geopy import distance
 ###############
 
 FMT = '%Y-%m-%d %H:%M:%S'
-PARQUET_PATH = 'parquet/'
-INPUT_PATH = '/home/jgonzalez/dev/codeward/parquet/*.parquet'
+CHUNKS_PATH = 'reports/parquet/chunks/'
+INPUT_PATH = 'reports/parquet/*.parquet'
 
 ###################
 #### FUNCTIONS ####
@@ -65,18 +65,23 @@ def process_transformed(files):
     # Con la información ya generada, se pueden calcular las respuestas
     dataframe = build_batch(files)
     # Hay que agrupar por las dimensiones necesarias y aplicar funciones de agregación:
-    # dataframe.groupby(['route_short_name','day']).seconds.sum()
-    # dataframe.groupby(['route_short_name','day']).distance.sum()
-    # Y así calcular la velocidad de cada bloque
 
-    # Imprimir las respuestas para
-    # - velocidad por día de cada línea
-    # - interno más rápido de cada línea
+    dataframe['speed']= dataframe['distance']/dataframe['time']
+    
+    speed_by_day=dataframe.groupby(['route_short_names','day','route_id'],as_index=False)['speed'].mean()
+    faster_id=dataframe.groupby(['route_short_names','route_id'],as_index=False)['speed'].mean()
+    faster_id= faster_id.loc[faster_id.groupby(['route_short_names', 'route_id'])['speed'].idxmax()]
+    
+    print('#### Velocidad por dia de cada linea: ')
+    print(speed_by_day) # velocidad por día de cada línea
+    print('#### Interno mas rapido por cada linea: ')
+    print(faster_id) # interno más rápido de cada línea
+    
 
 def delta_timestamp(batch):
     # filtramos 
-    df_maximo = batch.groupby(['route_short_name'], as_index=False).max(axis='timestamp')   
-    df_minimo = batch.groupby(['route_short_name'], as_index=False).min(axis='timestamp')
+    df_maximo = batch.groupby(['route_short_name', 'route_id'], as_index=False).max(axis='timestamp')   
+    df_minimo = batch.groupby(['route_short_name', 'route_id'], as_index=False).min(axis='timestamp')
 
     list_df_max = df_maximo.get('timestamp').tolist() # convertimos a lista columna timestamp de maximos
     list_df_min = df_minimo.get('timestamp').tolist() # convertimos a lista columna timestamp de minimos
@@ -140,8 +145,8 @@ def merge_distance_points(list1, list2):
 def store_data(data, counter):
     df = pandas.DataFrame(data)
     table =  pandas_to_parquet(df)
-    print('Saving .parquet file ' + PARQUET_PATH + 'pre_processed_chunk_' + str(counter) + '.parquet!')
-    pyarrow.parquet.write_table(table, PARQUET_PATH + 'pre_processed_chunk_' + str(counter) + '.parquet') # parquet file
+    print('Saving .parquet file ' + CHUNKS_PATH + 'pre_processed_chunk_' + str(counter) + '.parquet!')
+    pyarrow.parquet.write_table(table, CHUNKS_PATH + 'pre_processed_chunk_' + str(counter) + '.parquet') # parquet file
 
 def pandas_to_parquet(dataframe):
     result = pyarrow.Table.from_pandas(dataframe)
@@ -160,7 +165,7 @@ if __name__ == '__main__':
     chunk_size = 50
 
     chunks = [all_files[i:i + chunk_size] for i in range(0, len(all_files), chunk_size)]    
-    print(str(chunks[19]))
+    #print(str(chunks[117]))
 
     counter = 0
     for chunk in chunks:
@@ -169,3 +174,6 @@ if __name__ == '__main__':
         counter += 1
         # if counter == 5:
         #     break
+        
+    final_files = natsorted(glob.glob(CHUNKS_PATH))
+    process_transformed(final_files)
