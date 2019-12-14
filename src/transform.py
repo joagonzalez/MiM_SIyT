@@ -18,8 +18,8 @@ from geopy import distance
 ###############
 
 FMT = '%Y-%m-%d %H:%M:%S'
-PARQUET_PATH = 'parquet/'
-INPUT_PATH = '/home/jgonzalez/dev/codeward/parquet/*.parquet'
+PARQUET_PATH = 'C:/Users/juana.lopez.arbol/Desktop/Chunks/'
+INPUT_PATH = 'C:/Users/juana.lopez.arbol/Desktop/Parquets/*.parquet'
 
 ###################
 #### FUNCTIONS ####
@@ -53,7 +53,7 @@ def process_batch(batch, counter):
     # print('#### DEBUG END #### \n')
 
     # creamos data frame con informacion pre procesada de distance y tiempo de viaje
-    data = {'route_short_names': bus_lines, 'route_id': bus_route_id, 'time': time_column, 'day': day, 'distance': distance}
+    data = {'route_short_name': bus_lines, 'route_id': bus_route_id, 'time': time_column, 'day': day, 'distance': distance}
     df_export = pandas.DataFrame(data)
     
     print('#### INFO PARQUET CHUNK ' + str(counter) + ' #### \n')
@@ -65,8 +65,17 @@ def process_transformed(files):
     # Con la información ya generada, se pueden calcular las respuestas
     dataframe = build_batch(files)
     # Hay que agrupar por las dimensiones necesarias y aplicar funciones de agregación:
-    # dataframe.groupby(['route_short_name','day']).seconds.sum()
-    # dataframe.groupby(['route_short_name','day']).distance.sum()
+
+    dataframe['Speed']= dataframe['distance']/dataframe['time']
+    
+    Speed_by_day=dataframe.groupby(['route_short_name','day','route_id'],as_index=False)['Speed'].mean()
+    Faster_ID=dataframe.groupby(['route_short_name','route_id'],as_index=False)['Speed'].mean()
+    Faster_ID= Faster_ID.loc[Faster_ID.groupby(['route_short_name', 'route_id'])['Speed'].idxmax()]
+    print(Speed_by_day)
+    print(Faster_ID)
+    
+    
+    
     # Y así calcular la velocidad de cada bloque
 
     # Imprimir las respuestas para
@@ -157,10 +166,10 @@ def speed_max_line():
 if __name__ == '__main__':
     all_files = natsorted(glob.glob(INPUT_PATH))
     print(INPUT_PATH)
-    chunk_size = 50
+    chunk_size = 2
 
     chunks = [all_files[i:i + chunk_size] for i in range(0, len(all_files), chunk_size)]    
-    print(str(chunks[19]))
+    print(str(chunks[2]))
 
     counter = 0
     for chunk in chunks:
@@ -169,3 +178,7 @@ if __name__ == '__main__':
         counter += 1
         # if counter == 5:
         #     break
+    
+    final_files = natsorted(glob.glob(PARQUET_PATH))
+    process_transformed(final_files)
+    
